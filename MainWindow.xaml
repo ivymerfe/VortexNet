@@ -63,7 +63,7 @@
                      Grid.Row="0" Grid.Column="1"
                      PreviewTextInput="PreviewTextInput_PlayerName"
                      PreviewKeyDown="PreviewKeyDown_NoSpaces"
-                     TextChanged="playerNameTextBox_TextChanged"/>
+                     TextChanged="PlayerNameTextBox_TextChanged"/>
 
             <TextBlock Text="RAM amount:" Foreground="White" Margin="0,10,10,2" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBox x:Name="ramAmountTextBox"
@@ -71,17 +71,17 @@
                      Grid.Row="1" Grid.Column="1"
                      PreviewTextInput="PreviewTextInput_Number"
                      PreviewKeyDown="PreviewKeyDown_NoSpaces"
-                     TextChanged="ramAmountTextBox_TextChanged"/>
+                     TextChanged="RamAmountTextBox_TextChanged"/>
 
             <TextBlock Text="Version:" Foreground="White" Margin="0,10,10,2" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-            <ComboBox x:Name="versionsComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="2" Grid.Column="1" SelectionChanged="versionsComboBox_SelectionChanged"/>
+            <ComboBox x:Name="versionsComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="2" Grid.Column="1" SelectionChanged="VersionsComboBox_SelectionChanged"/>
 
             <TextBlock Text="Java:" Foreground="White" Margin="0,10,10,2" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-            <ComboBox x:Name="javaComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="3" Grid.Column="1" SelectionChanged="javaComboBox_SelectionChanged"/>
+            <ComboBox x:Name="javaComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="3" Grid.Column="1" SelectionChanged="JavaComboBox_SelectionChanged"/>
 
             <Button x:Name="playButton" Content="Play" Width="140" Height="40" Margin="0,20,0,0"
                     Foreground="White" BorderThickness="0"
-                    Cursor="Hand" Grid.Row="4" Grid.Column="0" Click="playButton_Click">
+                    Cursor="Hand" Grid.Row="4" Grid.Column="0" Click="PlayButton_Click">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Background" Value="Green"/>
@@ -123,29 +123,29 @@
                              Text="20"
                              PreviewTextInput="PreviewTextInput_Number"
                              PreviewKeyDown="PreviewKeyDown_NoSpaces"
-                             TextChanged="downloadThreadsTextBox_TextChanged"
+                             TextChanged="DownloadThreadsTextBox_TextChanged"
                              IsEnabled="{Binding ElementName=asyncDownloadCheckBox, Path=IsChecked}"/>
                 </DockPanel>
 
-                <CheckBox x:Name="asyncDownloadCheckBox" Content="Multithreaded downloading" Foreground="White" Margin="0,15,0,0" IsChecked="True" Checked="asyncDownloadCheckBox_CheckedChanged" Unchecked="asyncDownloadCheckBox_CheckedChanged"/>
-                <CheckBox x:Name="keepLauncherOpenCheckBox" Content="Keep launcher open" Foreground="White" Margin="0,15,0,0" IsChecked="True" Checked="keepLauncherOpenCheckBox_CheckedChanged" Unchecked="keepLauncherOpenCheckBox_CheckedChanged"/>
-                <CheckBox x:Name="downloadMissingLibsCheckBox" Content="Download missing libraries on launch" Foreground="White" Margin="0,15,0,0" Checked="downloadMissingLibsCheckBox_CheckedChanged" Unchecked="downloadMissingLibsCheckBox_CheckedChanged"/>
-                <CheckBox x:Name="saveLaunchStringCheckBox" Content="Save launch string to a file" Foreground="White" Margin="0,15,0,0" Checked="saveLaunchStringCheckBox_CheckedChanged" Unchecked="saveLaunchStringCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="asyncDownloadCheckBox" Content="Multithreaded downloading" Foreground="White" Margin="0,15,0,0" IsChecked="True" Checked="AsyncDownloadCheckBox_CheckedChanged" Unchecked="AsyncDownloadCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="keepLauncherOpenCheckBox" Content="Keep launcher open" Foreground="White" Margin="0,15,0,0" IsChecked="True" Checked="KeepLauncherOpenCheckBox_CheckedChanged" Unchecked="KeepLauncherOpenCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="downloadMissingLibsCheckBox" Content="Download missing libraries on launch" Foreground="White" Margin="0,15,0,0" Checked="DownloadMissingLibsCheckBox_CheckedChanged" Unchecked="DownloadMissingLibsCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="saveLaunchStringCheckBox" Content="Save launch string to a file" Foreground="White" Margin="0,15,0,0" Checked="SaveLaunchStringCheckBox_CheckedChanged" Unchecked="SaveLaunchStringCheckBox_CheckedChanged"/>
                 
                 <TextBlock Text="Custom Java path:" Foreground="White" Margin="0,15,0,0"/>
                 <TextBox x:Name="javaPathTextBox"
                          MinWidth="60" Height="25" HorizontalAlignment="Stretch" Margin="0,10,0,0"
                          Text="C:\jre8\bin\javaw.exe"
-                         TextChanged="javaPathTextBox_TextChanged"
+                         TextChanged="JavaPathTextBox_TextChanged"
                          IsEnabled="{Binding ElementName=useCustomJavaCheckBox, Path=IsChecked}"/>
-                <CheckBox x:Name="useCustomJavaCheckBox" Content="Use custom Java" Foreground="White" Margin="0,15,0,0" Checked="useCustomJavaCheckBox_CheckedChanged" Unchecked="useCustomJavaCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="useCustomJavaCheckBox" Content="Use custom Java" Foreground="White" Margin="0,15,0,0" Checked="UseCustomJavaCheckBox_CheckedChanged" Unchecked="UseCustomJavaCheckBox_CheckedChanged"/>
                 
                 <TextBlock Text="Launch Arguments:" Foreground="White" Margin="0,15,0,0"/>
                 <TextBox x:Name="launchArgsTextBox"
                          MinWidth="60" Height="25" HorizontalAlignment="Stretch" Margin="0,10,0,0"
-                         TextChanged="launchArgsTextBox_TextChanged"
+                         TextChanged="LaunchArgsTextBox_TextChanged"
                          IsEnabled="{Binding ElementName=useCustomParamsCheckBox, Path=IsChecked}"/>
-                <CheckBox x:Name="useCustomParamsCheckBox" Content="Use custom launch arguments" Foreground="White" Margin="0,15,0,0" Checked="useCustomParamsCheckBox_CheckedChanged" Unchecked="useCustomParamsCheckBox_CheckedChanged"/>
+                <CheckBox x:Name="useCustomParamsCheckBox" Content="Use custom launch arguments" Foreground="White" Margin="0,15,0,0" Checked="UseCustomParamsCheckBox_CheckedChanged" Unchecked="UseCustomParamsCheckBox_CheckedChanged"/>
             </StackPanel>
         </Border>
 
@@ -159,11 +159,11 @@
                     </ComboBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,8">
-                    <CheckBox x:Name="showAllVersionsCheckBox" Content="Show all versions" Foreground="White" Margin="0,0,16,0" Checked="showAllVersionsCheckBox_CheckedChanged" Unchecked="showAllVersionsCheckBox_CheckedChanged"/>
+                    <CheckBox x:Name="showAllVersionsCheckBox" Content="Show all versions" Foreground="White" Margin="0,0,16,0" Checked="ShowAllVersionsCheckBox_CheckedChanged" Unchecked="ShowAllVersionsCheckBox_CheckedChanged"/>
                     <CheckBox x:Name="redownloadAllFilesCheckBox" Content="Redownload all files" Foreground="White" Margin="0,0,16,0"/>
                 </StackPanel>
                 <Button x:Name="downloadVersionButton" Content="Download" Width="140" Height="36" Margin="0,10,0,0"
-                        Foreground="White" BorderThickness="0" HorizontalAlignment="Left" Cursor="Hand" Click="downloadVersionButton_Click">
+                        Foreground="White" BorderThickness="0" HorizontalAlignment="Left" Cursor="Hand" Click="DownloadVersionButton_Click">
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Background" Value="#0078D7"/>

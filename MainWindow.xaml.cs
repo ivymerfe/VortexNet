@@ -1,9 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -16,8 +13,8 @@ namespace VortexNet
     {
         private string workingDirectory;
         private string tempDirectory;
-        private readonly List<string> programFilesDirs = new List<string>();
-        private readonly List<string> javaDirs = new List<string>();
+        private readonly List<string> programFilesDirs = [];
+        private readonly List<string> javaDirs = [];
 
         private CancellationTokenSource downloadCancellationToken;
         private int downloadThreadsAmount = 20;
@@ -324,19 +321,17 @@ namespace VortexNet
         {
             try
             {
-                using (var client = new HttpClient())
-                {
-                    var response = await client.GetStringAsync("https://launchermeta.mojang.com/mc/game/version_manifest.json");
-                    versionsManifestString = response;
+                using var client = new HttpClient();
+                var response = await client.GetStringAsync("https://launchermeta.mojang.com/mc/game/version_manifest.json");
+                versionsManifestString = response;
 
-                    // We need to use Dispatcher since this is being called from an async method
-                    Dispatcher.Invoke(() =>
-                    {
-                        ParseVersionsManifest(showAllVersionsCheckBox.IsChecked ?? false);
-                    });
-                }
+                // We need to use Dispatcher since this is being called from an async method
+                Dispatcher.Invoke(() =>
+                {
+                    ParseVersionsManifest(showAllVersionsCheckBox.IsChecked ?? false);
+                });
             }
-            catch (Exception ex)
+            catch
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -385,7 +380,7 @@ namespace VortexNet
                     downloadVersionButton.IsEnabled = false;
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 downloadVersionsComboBox.Items.Add("Error parsing versions");
                 downloadVersionButton.IsEnabled = false;
@@ -396,36 +391,34 @@ namespace VortexNet
         {
             try
             {
-                using (JsonDocument doc = JsonDocument.Parse(versionsManifestString))
+                using JsonDocument doc = JsonDocument.Parse(versionsManifestString);
+                JsonElement root = doc.RootElement;
+                JsonElement versions = root.GetProperty("versions");
+
+                foreach (JsonElement version in versions.EnumerateArray())
                 {
-                    JsonElement root = doc.RootElement;
-                    JsonElement versions = root.GetProperty("versions");
+                    string id = version.GetProperty("id").GetString();
+                    string url = version.GetProperty("url").GetString();
 
-                    foreach (JsonElement version in versions.EnumerateArray())
+                    if (id == clientVersion)
                     {
-                        string id = version.GetProperty("id").GetString();
-                        string url = version.GetProperty("url").GetString();
-
-                        if (id == clientVersion)
-                        {
-                            return url;
-                        }
+                        return url;
                     }
                 }
             }
             catch { }
 
-            return null;
+            return "";
         }
 
-        private async void downloadVersionButton_Click(object sender, RoutedEventArgs e)
+        private async void DownloadVersionButton_Click(object sender, RoutedEventArgs e)
         {
             string versionToDownload = downloadVersionsComboBox.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(versionToDownload) || versionToDownload == "Error")
                 return;
 
             // Create version directory
-            CreateDirectoryRecursive(Path.Combine("versions", versionToDownload));
+            Utils.CreateDirectoryRecursive(Path.Combine("versions", versionToDownload));
 
             // Get version JSON URL
             string jsonUrl = GetVersionManifestUrl(versionToDownload);
@@ -438,7 +431,7 @@ namespace VortexNet
 
             // Download version JSON
             string jsonPath = Path.Combine("versions", versionToDownload, $"{versionToDownload}.json");
-            bool jsonDownloaded = await DownloadFileAsync(jsonUrl, jsonPath);
+            bool jsonDownloaded = await Utils.DownloadFileAsync(jsonUrl, jsonPath);
 
             if (!jsonDownloaded)
             {
@@ -451,67 +444,65 @@ namespace VortexNet
             string downloadListPath = Path.Combine(tempDirectory, "minecraft_download_list.txt");
             File.Delete(downloadListPath);
 
-            using (StreamWriter listFile = new StreamWriter(downloadListPath))
+            using (StreamWriter listFile = new(downloadListPath))
             {
                 // Parse version JSON for downloads
                 string versionJson = File.ReadAllText(jsonPath);
-                using (JsonDocument doc = JsonDocument.Parse(versionJson))
+
+                using JsonDocument doc = JsonDocument.Parse(versionJson);
+                JsonElement root = doc.RootElement;
+
+                // Asset index
+                string assetsIndex = root.GetProperty("assets").GetString();
+                string assetIndexUrl = root.GetProperty("assetIndex").GetProperty("url").GetString();
+
+                // Create assets directory
+                Utils.CreateDirectoryRecursive(Path.Combine("assets", "indexes"));
+
+                // Download asset index
+                string assetIndexPath = Path.Combine("assets", "indexes", $"{assetsIndex}.json");
+                await Utils.DownloadFileAsync(assetIndexUrl, assetIndexPath);
+
+                // Check for logging config
+                if (root.TryGetProperty("logging", out JsonElement logging))
                 {
-                    JsonElement root = doc.RootElement;
-
-                    // Asset index
-                    string assetsIndex = root.GetProperty("assets").GetString();
-                    string assetIndexUrl = root.GetProperty("assetIndex").GetProperty("url").GetString();
-
-                    // Create assets directory
-                    CreateDirectoryRecursive(Path.Combine("assets", "indexes"));
-
-                    // Download asset index
-                    string assetIndexPath = Path.Combine("assets", "indexes", $"{assetsIndex}.json");
-                    await DownloadFileAsync(assetIndexUrl, assetIndexPath);
-
-                    // Check for logging config
-                    if (root.TryGetProperty("logging", out JsonElement logging))
+                    if (logging.TryGetProperty("client", out JsonElement client))
                     {
-                        if (logging.TryGetProperty("client", out JsonElement client))
+                        if (client.TryGetProperty("file", out JsonElement file))
                         {
-                            if (client.TryGetProperty("file", out JsonElement file))
-                            {
-                                string logConfId = file.GetProperty("id").GetString();
-                                string logConfUrl = file.GetProperty("url").GetString();
-                                int logConfSize = file.GetProperty("size").GetInt32();
+                            string logConfId = file.GetProperty("id").GetString();
+                            string logConfUrl = file.GetProperty("url").GetString();
+                            int logConfSize = file.GetProperty("size").GetInt32();
 
-                                CreateDirectoryRecursive(Path.Combine("assets", "log_configs"));
-                                listFile.WriteLine($"{logConfUrl}::assets\\log_configs\\{logConfId}::{logConfSize}");
-                            }
+                            Utils.CreateDirectoryRecursive(Path.Combine("assets", "log_configs"));
+                            listFile.WriteLine($"{logConfUrl}::assets\\log_configs\\{logConfId}::{logConfSize}");
                         }
                     }
+                }
 
-                    // Client jar
-                    string clientUrl = root.GetProperty("downloads").GetProperty("client").GetProperty("url").GetString();
-                    int clientSize = root.GetProperty("downloads").GetProperty("client").GetProperty("size").GetInt32();
+                // Client jar
+                string clientUrl = root.GetProperty("downloads").GetProperty("client").GetProperty("url").GetString();
+                int clientSize = root.GetProperty("downloads").GetProperty("client").GetProperty("size").GetInt32();
 
-                    listFile.WriteLine($"{clientUrl}::versions\\{versionToDownload}\\{versionToDownload}.jar::{clientSize}");
+                listFile.WriteLine($"{clientUrl}::versions\\{versionToDownload}\\{versionToDownload}.jar::{clientSize}");
 
-                    // Libraries
-                    ParseLibrariesForDownload(versionJson, versionToDownload, listFile);
+                // Libraries
+                ParseLibrariesForDownload(versionJson, versionToDownload, listFile);
 
-                    // Parse assets
-                    string assetsJson = File.ReadAllText(Path.Combine("assets", "indexes", $"{assetsIndex}.json"));
-                    using (JsonDocument assetsDoc = JsonDocument.Parse(assetsJson))
-                    {
-                        JsonElement assetsRoot = assetsDoc.RootElement;
-                        JsonElement objects = assetsRoot.GetProperty("objects");
+                // Parse assets
+                string assetsJson = File.ReadAllText(Path.Combine("assets", "indexes", $"{assetsIndex}.json"));
 
-                        foreach (JsonProperty asset in objects.EnumerateObject())
-                        {
-                            string hash = asset.Value.GetProperty("hash").GetString();
-                            int size = asset.Value.GetProperty("size").GetInt32();
+                using JsonDocument assetsDoc = JsonDocument.Parse(assetsJson);
+                JsonElement assetsRoot = assetsDoc.RootElement;
+                JsonElement objects = assetsRoot.GetProperty("objects");
 
-                            string hashPrefix = hash.Substring(0, 2);
-                            listFile.WriteLine($"https://resources.download.minecraft.net/{hashPrefix}/{hash}::assets\\objects\\{hashPrefix}\\{hash}::{size}");
-                        }
-                    }
+                foreach (JsonProperty asset in objects.EnumerateObject())
+                {
+                    string hash = asset.Value.GetProperty("hash").GetString();
+                    int size = asset.Value.GetProperty("size").GetInt32();
+
+                    string hashPrefix = hash.Substring(0, 2);
+                    listFile.WriteLine($"https://resources.download.minecraft.net/{hashPrefix}/{hash}::assets\\objects\\{hashPrefix}\\{hash}::{size}");
                 }
             }
 
@@ -551,114 +542,112 @@ namespace VortexNet
         {
             try
             {
-                using (JsonDocument doc = JsonDocument.Parse(versionJson))
+                using JsonDocument doc = JsonDocument.Parse(versionJson);
+                JsonElement root = doc.RootElement;
+                JsonElement libraries = root.GetProperty("libraries");
+
+                foreach (JsonElement library in libraries.EnumerateArray())
                 {
-                    JsonElement root = doc.RootElement;
-                    JsonElement libraries = root.GetProperty("libraries");
+                    bool allowLib = true;
 
-                    foreach (JsonElement library in libraries.EnumerateArray())
+                    // Check rules
+                    if (library.TryGetProperty("rules", out JsonElement rules))
                     {
-                        bool allowLib = true;
-
-                        // Check rules
-                        if (library.TryGetProperty("rules", out JsonElement rules))
+                        foreach (JsonElement rule in rules.EnumerateArray())
                         {
-                            foreach (JsonElement rule in rules.EnumerateArray())
+                            string action = rule.GetProperty("action").GetString();
+
+                            if (rule.TryGetProperty("os", out JsonElement os))
                             {
-                                string action = rule.GetProperty("action").GetString();
+                                string osName = os.GetProperty("name").GetString();
 
-                                if (rule.TryGetProperty("os", out JsonElement os))
+                                if (action == "allow")
                                 {
-                                    string osName = os.GetProperty("name").GetString();
-
-                                    if (action == "allow")
+                                    if (osName != "windows")
                                     {
-                                        if (osName != "windows")
-                                        {
-                                            allowLib = false;
-                                        }
+                                        allowLib = false;
                                     }
-                                    else // disallow
+                                }
+                                else // disallow
+                                {
+                                    if (osName == "windows")
                                     {
-                                        if (osName == "windows")
-                                        {
-                                            allowLib = false;
-                                        }
+                                        allowLib = false;
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (!allowLib) continue;
+                    if (!allowLib) continue;
 
-                        string name = library.GetProperty("name").GetString();
-                        string[] nameParts = name.Split(':');
+                    string name = library.GetProperty("name").GetString();
+                    string[] nameParts = name.Split(':');
 
-                        if (nameParts.Length < 3) continue;
+                    if (nameParts.Length < 3) continue;
 
-                        // Build library path
-                        string domain = nameParts[0].Replace(".", "\\");
-                        string artifact = nameParts[1];
-                        string version = nameParts[2];
-                        string classifier = nameParts.Length > 3 ? nameParts[3] : "";
+                    // Build library path
+                    string domain = nameParts[0].Replace(".", "\\");
+                    string artifact = nameParts[1];
+                    string version = nameParts[2];
+                    string classifier = nameParts.Length > 3 ? nameParts[3] : "";
 
-                        string libBasePath = $"{domain}\\{artifact}";
-                        string libPath = $"{libBasePath}\\{version}\\{artifact}-{version}";
+                    string libBasePath = $"{domain}\\{artifact}";
+                    string libPath = $"{libBasePath}\\{version}\\{artifact}-{version}";
 
-                        if (!string.IsNullOrEmpty(classifier))
+                    if (!string.IsNullOrEmpty(classifier))
+                    {
+                        libPath += $"-{classifier}";
+                    }
+
+                    // Check for downloads
+                    string url = "";
+                    int fileSize = 0;
+
+                    if (library.TryGetProperty("downloads", out JsonElement downloads))
+                    {
+                        // Check for artifact
+                        if (downloads.TryGetProperty("artifact", out JsonElement artifact2))
                         {
-                            libPath += $"-{classifier}";
+                            url = artifact2.GetProperty("url").GetString();
+                            fileSize = artifact2.GetProperty("size").GetInt32();
                         }
-
-                        // Check for downloads
-                        string url = "";
-                        int fileSize = 0;
-
-                        if (library.TryGetProperty("downloads", out JsonElement downloads))
+                        // Check for classifier (natives)
+                        else if (downloads.TryGetProperty("classifiers", out JsonElement classifiers))
                         {
-                            // Check for artifact
-                            if (downloads.TryGetProperty("artifact", out JsonElement artifact2))
+                            if (classifiers.TryGetProperty("natives-windows", out JsonElement nativesWindows))
                             {
-                                url = artifact2.GetProperty("url").GetString();
-                                fileSize = artifact2.GetProperty("size").GetInt32();
-                            }
-                            // Check for classifier (natives)
-                            else if (downloads.TryGetProperty("classifiers", out JsonElement classifiers))
-                            {
-                                if (classifiers.TryGetProperty("natives-windows", out JsonElement nativesWindows))
-                                {
-                                    url = nativesWindows.GetProperty("url").GetString();
-                                    fileSize = nativesWindows.GetProperty("size").GetInt32();
-                                    libPath += "-natives-windows";
-                                }
+                                url = nativesWindows.GetProperty("url").GetString();
+                                fileSize = nativesWindows.GetProperty("size").GetInt32();
+                                libPath += "-natives-windows";
                             }
                         }
-                        else if (library.TryGetProperty("url", out JsonElement urlElem))
-                        {
-                            url = urlElem.GetString() + libPath.Replace("\\", "/") + ".jar";
-                        }
-                        else
-                        {
-                            url = $"https://libraries.minecraft.net/{libPath.Replace("\\", "/")}.jar";
-                        }
+                    }
+                    else if (library.TryGetProperty("url", out JsonElement urlElem))
+                    {
+                        url = urlElem.GetString() + libPath.Replace("\\", "/") + ".jar";
+                    }
+                    else
+                    {
+                        url = $"https://libraries.minecraft.net/{libPath.Replace("\\", "/")}.jar";
+                    }
 
-                        if (!string.IsNullOrEmpty(url))
-                        {
-                            listFile.WriteLine($"{url}::libraries\\{libPath}.jar::{fileSize}");
-                        }
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        listFile.WriteLine($"{url}::libraries\\{libPath}.jar::{fileSize}");
+                    }
 
-                        // Extract natives if needed
-                        if (library.TryGetProperty("natives", out JsonElement _))
-                        {
-                            CreateDirectoryRecursive(Path.Combine("versions", versionName, "natives"));
-                            // Native extraction will be done during launch
-                        }
+                    // Extract natives if needed
+                    if (library.TryGetProperty("natives", out JsonElement _))
+                    {
+                        Utils.CreateDirectoryRecursive(Path.Combine("versions", versionName, "natives"));
+                        // Native extraction will be done during launch
                     }
                 }
 
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
                 return false;
             }
@@ -695,7 +684,7 @@ namespace VortexNet
                     if (token.IsCancellationRequested)
                         return false;
 
-                    string[] parts = line.Split(new string[] { "::" }, StringSplitOptions.None);
+                    string[] parts = line.Split(["::"], StringSplitOptions.None);
                     if (parts.Length < 2)
                         continue;
 
@@ -703,7 +692,7 @@ namespace VortexNet
                     string filePath = parts[1];
                     int requiredSize = parts.Length > 2 ? int.Parse(parts[2]) : 0;
 
-                    FileInfo fileInfo = new FileInfo(filePath);
+                    FileInfo fileInfo = new(filePath);
                     bool needDownload = downloadAllFiles ||
                                        !fileInfo.Exists ||
                                        (requiredSize > 0 && fileInfo.Length != requiredSize);
@@ -722,17 +711,14 @@ namespace VortexNet
                         continue;
                     }
 
-                    await semaphore.WaitAsync();
+                    await semaphore.WaitAsync(token);
 
                     downloadTasks.Add(Task.Run(async () =>
                     {
                         try
                         {
-                            // Create directory if doesn't exist
-                            CreateDirectoryRecursive(Path.GetDirectoryName(filePath));
-
-                            // Download file
-                            bool success = await DownloadFileAsync(url, filePath, 5);
+                            Utils.CreateDirectoryRecursive(Path.GetDirectoryName(filePath));
+                            bool success = await Utils.DownloadFileAsync(url, filePath, 5);
 
                             if (success)
                                 Interlocked.Increment(ref succeeded);
@@ -770,7 +756,7 @@ namespace VortexNet
                     if (token.IsCancellationRequested)
                         return false;
 
-                    string[] parts = line.Split(new string[] { "::" }, StringSplitOptions.None);
+                    string[] parts = line.Split(["::"], StringSplitOptions.None);
                     if (parts.Length < 2)
                         continue;
 
@@ -778,7 +764,7 @@ namespace VortexNet
                     string filePath = parts[1];
                     int requiredSize = parts.Length > 2 ? int.Parse(parts[2]) : 0;
 
-                    FileInfo fileInfo = new FileInfo(filePath);
+                    FileInfo fileInfo = new(filePath);
                     bool needDownload = downloadAllFiles ||
                                        !fileInfo.Exists ||
                                        (requiredSize > 0 && fileInfo.Length != requiredSize);
@@ -798,10 +784,10 @@ namespace VortexNet
                     }
 
                     // Create directory if doesn't exist
-                    CreateDirectoryRecursive(Path.GetDirectoryName(filePath));
+                    Utils.CreateDirectoryRecursive(Path.GetDirectoryName(filePath));
 
                     // Download file
-                    bool success = await DownloadFileAsync(url, filePath, 5);
+                    bool success = await Utils.DownloadFileAsync(url, filePath, 5);
 
                     if (success)
                         succeeded++;
@@ -821,54 +807,7 @@ namespace VortexNet
             return failed <= 5;
         }
 
-        private async Task<bool> DownloadFileAsync(string url, string filePath, int maxRetries = 1)
-        {
-            int retries = 0;
-
-            while (retries < maxRetries)
-            {
-                try
-                {
-                    // Create directory structure
-                    CreateDirectoryRecursive(Path.GetDirectoryName(filePath));
-
-                    // Download file
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.Timeout = TimeSpan.FromSeconds(30);
-                        byte[] data = await client.GetByteArrayAsync(url);
-
-                        using (FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                        {
-                            await fileStream.WriteAsync(data, 0, data.Length);
-                        }
-                    }
-
-                    return true;
-                }
-                catch
-                {
-                    retries++;
-
-                    if (retries >= maxRetries)
-                        return false;
-
-                    await Task.Delay(500);
-                }
-            }
-
-            return false;
-        }
-
-        private void CreateDirectoryRecursive(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return;
-
-            Directory.CreateDirectory(path);
-        }
-
-        private void playButton_Click(object sender, RoutedEventArgs e)
+        private void PlayButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -917,9 +856,9 @@ namespace VortexNet
                 }
 
                 // Replace version name if it contains spaces
-                if (selectedVersion.Contains(" "))
+                if (selectedVersion.Contains(' '))
                 {
-                    selectedVersion = RemoveSpacesFromVersionName(selectedVersion);
+                    selectedVersion = Utils.RemoveSpacesFromVersionName(selectedVersion);
                 }
 
                 // Set Java binary path
@@ -952,7 +891,7 @@ namespace VortexNet
                 // Optionally close launcher
                 if (!(keepLauncherOpenCheckBox.IsChecked ?? true))
                 {
-                    this.Close();
+                    Close();
                 }
             }
             catch (Exception ex)
@@ -960,30 +899,6 @@ namespace VortexNet
                 MessageBox.Show($"Error launching Minecraft: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private string RemoveSpacesFromVersionName(string version)
-        {
-            string newVersion = version.Replace(" ", "-");
-            string versionDir = Path.Combine("versions", version);
-            string newVersionDir = Path.Combine("versions", newVersion);
-
-            // Rename files and directory
-            if (File.Exists(Path.Combine(versionDir, $"{version}.jar")))
-            {
-                File.Move(Path.Combine(versionDir, $"{version}.jar"),
-                          Path.Combine(versionDir, $"{newVersion}.jar"));
-            }
-
-            if (File.Exists(Path.Combine(versionDir, $"{version}.json")))
-            {
-                File.Move(Path.Combine(versionDir, $"{version}.json"),
-                          Path.Combine(versionDir, $"{newVersion}.json"));
-            }
-
-            Directory.Move(versionDir, newVersionDir);
-
-            return newVersion;
         }
 
         private string GetJavaBinaryPath(string javaSelection)
@@ -1015,6 +930,7 @@ namespace VortexNet
 
             return javaBinaryPathDefault;
         }
+
         private void LaunchMinecraft(string version)
         {
             string clientJarFile = Path.Combine("versions", version, $"{version}.jar");
@@ -1033,9 +949,8 @@ namespace VortexNet
             JsonDocument jsonDoc = JsonDocument.Parse(versionJson);
             JsonElement root = jsonDoc.RootElement;
 
-            string inheritsFrom = null;
+            string inheritsFrom = "";
             string assetsIndex = "legacy";
-            string clientMainClass = null;
             string clientArguments = "";
             string jvmArguments = "";
             string logConfArgument = "";
@@ -1072,52 +987,51 @@ namespace VortexNet
                 if (File.Exists(inheritsJsonPath))
                 {
                     string inheritsJson = File.ReadAllText(inheritsJsonPath);
-                    using (JsonDocument inheritsDoc = JsonDocument.Parse(inheritsJson))
+
+                    using JsonDocument inheritsDoc = JsonDocument.Parse(inheritsJson);
+                    JsonElement inheritsRoot = inheritsDoc.RootElement;
+
+                    // Get assets index from inheritsFrom
+                    assetsIndex = inheritsRoot.GetProperty("assets").GetString();
+
+                    // Get arguments
+                    if (inheritsRoot.TryGetProperty("arguments", out JsonElement arguments))
                     {
-                        JsonElement inheritsRoot = inheritsDoc.RootElement;
-
-                        // Get assets index from inheritsFrom
-                        assetsIndex = inheritsRoot.GetProperty("assets").GetString();
-
-                        // Get arguments
-                        if (inheritsRoot.TryGetProperty("arguments", out JsonElement arguments))
+                        if (arguments.TryGetProperty("game", out JsonElement gameArgs))
                         {
-                            if (arguments.TryGetProperty("game", out JsonElement gameArgs))
+                            foreach (JsonElement arg in gameArgs.EnumerateArray())
                             {
-                                foreach (JsonElement arg in gameArgs.EnumerateArray())
+                                if (arg.ValueKind == JsonValueKind.String)
                                 {
-                                    if (arg.ValueKind == JsonValueKind.String)
-                                    {
-                                        clientArguments += " " + arg.GetString() + " ";
-                                    }
-                                }
-                            }
-
-                            if (arguments.TryGetProperty("jvm", out JsonElement jvmArgs))
-                            {
-                                foreach (JsonElement arg in jvmArgs.EnumerateArray())
-                                {
-                                    if (arg.ValueKind == JsonValueKind.String)
-                                    {
-                                        jvmArguments += " \"" + arg.GetString() + "\" ";
-                                    }
+                                    clientArguments += " " + arg.GetString() + " ";
                                 }
                             }
                         }
 
-                        // Parse libraries from inheritsFrom
-                        librariesString += ParseLibrariesForLaunch(inheritsClientJar, downloadMissingLibraries);
-
-                        // Get logging configuration
-                        if (inheritsRoot.TryGetProperty("logging", out JsonElement logging2))
+                        if (arguments.TryGetProperty("jvm", out JsonElement jvmArgs))
                         {
-                            if (logging2.TryGetProperty("client", out JsonElement client))
+                            foreach (JsonElement arg in jvmArgs.EnumerateArray())
                             {
-                                if (client.TryGetProperty("file", out JsonElement file))
+                                if (arg.ValueKind == JsonValueKind.String)
                                 {
-                                    string logConfId = file.GetProperty("id").GetString();
-                                    logConfArgument = $"-Dlog4j.configurationFile=assets\\log_configs\\{logConfId}";
+                                    jvmArguments += " \"" + arg.GetString() + "\" ";
                                 }
+                            }
+                        }
+                    }
+
+                    // Parse libraries from inheritsFrom
+                    librariesString += ParseLibrariesForLaunch(inheritsClientJar, downloadMissingLibraries);
+
+                    // Get logging configuration
+                    if (inheritsRoot.TryGetProperty("logging", out JsonElement logging2))
+                    {
+                        if (logging2.TryGetProperty("client", out JsonElement client))
+                        {
+                            if (client.TryGetProperty("file", out JsonElement file))
+                            {
+                                string logConfId = file.GetProperty("id").GetString();
+                                logConfArgument = $"-Dlog4j.configurationFile=assets\\log_configs\\{logConfId}";
                             }
                         }
                     }
@@ -1193,7 +1107,7 @@ namespace VortexNet
             }
 
             // Get main class
-            clientMainClass = root.GetProperty("mainClass").GetString();
+            string clientMainClass = root.GetProperty("mainClass").GetString();
 
             // Parse libraries from current version
             librariesString += ParseLibrariesForLaunch(version, downloadMissingLibraries);
@@ -1204,7 +1118,7 @@ namespace VortexNet
                 // If assets need to be copied to resources
                 if (assetsIndex == "pre-1.6" || assetsIndex == "legacy")
                 {
-                    AssetsToResources(assetsIndex);
+                    Utils.AssetsToResources(assetsIndex);
                 }
 
                 // Download missing libraries if needed
@@ -1248,7 +1162,7 @@ namespace VortexNet
                 }
 
                 // Generate UUID for offline mode
-                string uuid = GenerateOfflineUUID(playerName);
+                string uuid = Utils.GenerateOfflineUUID(playerName);
 
                 // Check if the arguments are in the new format 
                 bool isNewFormat = clientArguments.Contains("--username") || clientArguments.Contains("${auth_player_name}");
@@ -1303,7 +1217,7 @@ namespace VortexNet
                     File.WriteAllText("launch_string.txt", $"\"{javaBinaryPath}\" {fullLaunchString}");
                 }
 
-                ProcessStartInfo startInfo = new ProcessStartInfo
+                ProcessStartInfo startInfo = new()
                 {
                     FileName = javaBinaryPath,
                     Arguments = fullLaunchString,
@@ -1339,103 +1253,102 @@ namespace VortexNet
             try
             {
                 string versionJson = File.ReadAllText(versionJsonPath);
-                using (JsonDocument doc = JsonDocument.Parse(versionJson))
+
+                using JsonDocument doc = JsonDocument.Parse(versionJson);
+                JsonElement root = doc.RootElement;
+                JsonElement libraries = root.GetProperty("libraries");
+
+                foreach (JsonElement library in libraries.EnumerateArray())
                 {
-                    JsonElement root = doc.RootElement;
-                    JsonElement libraries = root.GetProperty("libraries");
+                    bool allowLib = true;
 
-                    foreach (JsonElement library in libraries.EnumerateArray())
+                    // Check rules
+                    if (library.TryGetProperty("rules", out JsonElement rules))
                     {
-                        bool allowLib = true;
-
-                        // Check rules
-                        if (library.TryGetProperty("rules", out JsonElement rules))
+                        foreach (JsonElement rule in rules.EnumerateArray())
                         {
-                            foreach (JsonElement rule in rules.EnumerateArray())
+                            string action = rule.GetProperty("action").GetString();
+
+                            if (rule.TryGetProperty("os", out JsonElement os))
                             {
-                                string action = rule.GetProperty("action").GetString();
+                                string osName = os.GetProperty("name").GetString();
 
-                                if (rule.TryGetProperty("os", out JsonElement os))
+                                if (action == "allow")
                                 {
-                                    string osName = os.GetProperty("name").GetString();
-
-                                    if (action == "allow")
+                                    if (osName != "windows")
                                     {
-                                        if (osName != "windows")
-                                        {
-                                            allowLib = false;
-                                        }
+                                        allowLib = false;
                                     }
-                                    else // disallow
+                                }
+                                else // disallow
+                                {
+                                    if (osName == "windows")
                                     {
-                                        if (osName == "windows")
-                                        {
-                                            allowLib = false;
-                                        }
+                                        allowLib = false;
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (!allowLib) continue;
+                    if (!allowLib) continue;
 
-                        string name = library.GetProperty("name").GetString();
-                        string[] nameParts = name.Split(':');
+                    string name = library.GetProperty("name").GetString();
+                    string[] nameParts = name.Split(':');
 
-                        if (nameParts.Length < 3) continue;
+                    if (nameParts.Length < 3) continue;
 
-                        // Build library path
-                        string domain = nameParts[0].Replace(".", "\\");
-                        string artifact = nameParts[1];
-                        string version = nameParts[2];
-                        string classifier = nameParts.Length > 3 ? nameParts[3] : "";
+                    // Build library path
+                    string domain = nameParts[0].Replace(".", "\\");
+                    string artifact = nameParts[1];
+                    string version = nameParts[2];
+                    string classifier = nameParts.Length > 3 ? nameParts[3] : "";
 
-                        string libBasePath = $"{domain}\\{artifact}";
-                        string libPath = $"{libBasePath}\\{version}\\{artifact}-{version}";
+                    string libBasePath = $"{domain}\\{artifact}";
+                    string libPath = $"{libBasePath}\\{version}\\{artifact}-{version}";
 
-                        if (!string.IsNullOrEmpty(classifier))
+                    if (!string.IsNullOrEmpty(classifier))
+                    {
+                        libPath += $"-{classifier}";
+                    }
+
+                    // Skip if already in libraries string
+                    bool skipLib = false;
+                    if (!string.IsNullOrEmpty(existingLibraries) && existingLibraries.Contains(libBasePath + "\\"))
+                    {
+                        skipLib = true;
+                    }
+
+                    // Extract natives if needed
+                    if (library.TryGetProperty("natives", out JsonElement natives))
+                    {
+                        string nativesPath = Path.Combine("versions", clientVersion, "natives");
+                        Directory.CreateDirectory(nativesPath);
+
+                        // The actual extraction will be implemented when needed
+                        string nativesJar;
+
+                        if (!libPath.EndsWith("natives-windows"))
                         {
-                            libPath += $"-{classifier}";
+                            nativesJar = Path.Combine("libraries", $"{libPath}-natives-windows.jar");
+                        }
+                        else
+                        {
+                            nativesJar = Path.Combine("libraries", $"{libPath}.jar");
                         }
 
-                        // Skip if already in libraries string
-                        bool skipLib = false;
-                        if (!string.IsNullOrEmpty(existingLibraries) && existingLibraries.Contains(libBasePath + "\\"))
+                        if (File.Exists(nativesJar))
                         {
-                            skipLib = true;
+                            Utils.ExtractNatives(nativesJar, nativesPath);
                         }
-
-                        // Extract natives if needed
-                        if (library.TryGetProperty("natives", out JsonElement natives))
-                        {
-                            string nativesPath = Path.Combine("versions", clientVersion, "natives");
-                            Directory.CreateDirectory(nativesPath);
-
-                            // The actual extraction will be implemented when needed
-                            string nativesJar;
-
-                            if (!libPath.EndsWith("natives-windows"))
-                            {
-                                nativesJar = Path.Combine("libraries", $"{libPath}-natives-windows.jar");
-                            }
-                            else
-                            {
-                                nativesJar = Path.Combine("libraries", $"{libPath}.jar");
-                            }
-
-                            if (File.Exists(nativesJar))
-                            {
-                                ExtractNatives(nativesJar, nativesPath);
-                            }
-                        }
-                        else if (!skipLib)
-                        {
-                            libsString += $"{workingDirectory}libraries\\{libPath}.jar;";
-                        }
+                    }
+                    else if (!skipLib)
+                    {
+                        libsString += $"{workingDirectory}libraries\\{libPath}.jar;";
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 // Error handling
             }
@@ -1443,110 +1356,16 @@ namespace VortexNet
             return libsString;
         }
 
-        private void ExtractNatives(string zipPath, string outputPath)
-        {
-            try
-            {
-                if (!File.Exists(zipPath))
-                    return;
-
-                using (var zip = System.IO.Compression.ZipFile.OpenRead(zipPath))
-                {
-                    foreach (var entry in zip.Entries)
-                    {
-                        if (entry.FullName.EndsWith(".dll") || entry.FullName.EndsWith(".so"))
-                        {
-                            string outputFilePath = Path.Combine(outputPath, entry.Name);
-
-                            if (!File.Exists(outputFilePath) || new FileInfo(outputFilePath).Length < 1)
-                            {
-                                entry.ExtractToFile(outputFilePath, true);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-            }
-        }
-
-        private void AssetsToResources(string assetsIndex)
-        {
-            string indexPath = Path.Combine("assets", "indexes", $"{assetsIndex}.json");
-
-            if (!File.Exists(indexPath))
-                return;
-
-            try
-            {
-                string assetsJson = File.ReadAllText(indexPath);
-                using (JsonDocument doc = JsonDocument.Parse(assetsJson))
-                {
-                    JsonElement root = doc.RootElement;
-                    JsonElement objects = root.GetProperty("objects");
-
-                    foreach (JsonProperty asset in objects.EnumerateObject())
-                    {
-                        string fileName = asset.Name;
-                        string hash = asset.Value.GetProperty("hash").GetString();
-                        int size = asset.Value.GetProperty("size").GetInt32();
-
-                        // Create path
-                        string resourcePath = Path.Combine("resources", fileName.Replace("/", "\\"));
-                        string hashPath = Path.Combine("assets", "objects", hash.Substring(0, 2), hash);
-
-                        // Check if we need to copy
-                        bool needCopy = !File.Exists(resourcePath) || new FileInfo(resourcePath).Length != size;
-
-                        if (needCopy && File.Exists(hashPath))
-                        {
-                            // Create directory structure
-                            Directory.CreateDirectory(Path.GetDirectoryName(resourcePath));
-
-                            // Copy file
-                            File.Copy(hashPath, resourcePath, true);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-            }
-        }
-
-        private string GenerateOfflineUUID(string username)
-        {
-            using (MD5 md5 = MD5.Create())
-            {
-                byte[] inputBytes = Encoding.UTF8.GetBytes("OfflinePlayer:" + username);
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
-
-                // Convert to UUID format
-                hashBytes[6] = (byte)((hashBytes[6] & 0x0F) | 0x30);
-                hashBytes[8] = (byte)((hashBytes[8] & 0x3F) | 0x80);
-
-                // Format UUID with dashes (8-4-4-4-12)
-                return $"{BitConverter.ToString(hashBytes, 0, 4).Replace("-", "").ToLower()}-" +
-                       $"{BitConverter.ToString(hashBytes, 4, 2).Replace("-", "").ToLower()}-" +
-                       $"{BitConverter.ToString(hashBytes, 6, 2).Replace("-", "").ToLower()}-" +
-                       $"{BitConverter.ToString(hashBytes, 8, 2).Replace("-", "").ToLower()}-" +
-                       $"{BitConverter.ToString(hashBytes, 10, 6).Replace("-", "").ToLower()}";
-            }
-        }
-
         // WPF Event handlers
         private void PreviewTextInput_Number(object sender, TextCompositionEventArgs e)
         {
-            Regex regex = new Regex("[^0-9]+");
+            Regex regex = new("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
         }
 
         private void PreviewTextInput_PlayerName(object sender, TextCompositionEventArgs e)
         {
-            Regex regex = new Regex("[^a-zA-Z]+");
+            Regex regex = new("[^a-zA-Z]+");
             e.Handled = regex.IsMatch(e.Text);
         }
 
@@ -1558,7 +1377,7 @@ namespace VortexNet
             }
         }
 
-        private void useCustomJavaCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void UseCustomJavaCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             javaPathTextBox.IsEnabled = useCustomJavaCheckBox.IsChecked == true;
             javaComboBox.IsEnabled = useCustomJavaCheckBox.IsChecked != true;
@@ -1566,19 +1385,19 @@ namespace VortexNet
             SaveSettings();
         }
 
-        private void useCustomParamsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void UseCustomParamsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             launchArgsTextBox.IsEnabled = useCustomParamsCheckBox.IsChecked == true;
             SaveSettings();
         }
 
-        private void asyncDownloadCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void AsyncDownloadCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             downloadThreadsTextBox.IsEnabled = asyncDownloadCheckBox.IsChecked == true;
             SaveSettings();
         }
 
-        private void showAllVersionsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void ShowAllVersionsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrEmpty(versionsManifestString))
             {
@@ -1587,32 +1406,32 @@ namespace VortexNet
             SaveSettings();
         }
 
-        private void playerNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void PlayerNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!isInitializing) SaveSettings();
         }
 
-        private void ramAmountTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void RamAmountTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!isInitializing) SaveSettings();
         }
 
-        private void downloadThreadsTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void DownloadThreadsTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!isInitializing) SaveSettings();
         }
 
-        private void javaPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void JavaPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!isInitializing) SaveSettings();
         }
 
-        private void launchArgsTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void LaunchArgsTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!isInitializing) SaveSettings();
         }
 
-        private void versionsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void VersionsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isInitializing && versionsComboBox.SelectedItem != null)
             {
@@ -1620,7 +1439,7 @@ namespace VortexNet
             }
         }
 
-        private void javaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void JavaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isInitializing && javaComboBox.SelectedItem != null)
             {
@@ -1628,17 +1447,17 @@ namespace VortexNet
             }
         }
 
-        private void keepLauncherOpenCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void KeepLauncherOpenCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             SaveSettings();
         }
 
-        private void downloadMissingLibsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void DownloadMissingLibsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             SaveSettings();
         }
 
-        private void saveLaunchStringCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        private void SaveLaunchStringCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             SaveSettings();
         }
