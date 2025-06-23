@@ -39,5 +39,3 @@ Check the [**Releases**](https://github.com/ivymerfe/VortexNet/releases) page
 ## License
 
 [GPLv3](https://github.com/Kron4ek/minecraft-vortex-launcher/blob/master/LICENSE.txt)
-
----
