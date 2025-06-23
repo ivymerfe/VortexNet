@@ -1,7 +1,7 @@
 ## Vortex Minecraft Launcher (WPF Edition)
 
 [![English](https://img.shields.io/badge/Language-English-blue)](README.md)
-[![Русский](https://img.shields.io/badge/Language-Русский-red)](README_RU.md)
+[![Р СѓСЃСЃРєРёР№](https://img.shields.io/badge/Language-Р СѓСЃСЃРєРёР№-red)](README_RU.md)
 
 .NET port of [Vortex Minecraft launcher](https://github.com/Kron4ek/minecraft-vortex-launcher) by Kron4ek.
 
