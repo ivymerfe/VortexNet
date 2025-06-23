@@ -11,7 +11,7 @@ I just made a cool UI.
 
 ## Features
 
-* Lightweight and fast
+* Lightweight (if you have .NET Runtime installed) and fast
 * Open-Source
 * ~~Cross-Platform~~ Windows only
 * Supports all Minecraft versions
