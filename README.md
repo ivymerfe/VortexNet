@@ -12,7 +12,7 @@ It differs from the original by having an improved interface and lacking some fe
 
 ## Features
 
-* Lightweight (if you have .NET Runtime installed) and fast
+* Lightweight and fast
 * Open-Source
 * ~~Cross-Platform~~ Windows only
 * Supports all Minecraft versions
