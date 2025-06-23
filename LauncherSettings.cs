@@ -4,6 +4,7 @@ namespace VortexNet
     public class LauncherSettings
     {
         // User settings
+        public string Language { get; set; } = "EN";
         public string PlayerName { get; set; } = "Player";
         public string RamAmount { get; set; } = "2500";
         public string ChosenVersion { get; set; } = "";

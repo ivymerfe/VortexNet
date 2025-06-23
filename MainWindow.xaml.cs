@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -38,6 +39,7 @@ namespace VortexNet
 
         private LauncherSettings settings;
         private string settingsPath;
+        private JsonSerializerOptions serializerOptions = new JsonSerializerOptions { WriteIndented = true };
 
         public MainWindow()
         {
@@ -63,37 +65,27 @@ namespace VortexNet
 
         private void InitializeLauncher()
         {
-            // Set working and temp directories
             workingDirectory = AppDomain.CurrentDomain.BaseDirectory;
             tempDirectory = Path.GetTempPath();
 
-            // Initialize program files and Java directories
             programFilesDirs.Add(Environment.GetEnvironmentVariable("PROGRAMFILES") + "\\");
             programFilesDirs.Add(Environment.GetEnvironmentVariable("ProgramFiles(x86)") + "\\");
 
             javaDirs.Add("Java");
             javaDirs.Add("Eclipse Adoptium");
 
-            // Set the working directory
             Directory.SetCurrentDirectory(workingDirectory);
 
-            // Load preferences
             LoadSettings();
 
-            // Find versions and Java
             FindInstalledVersions();
             FindJava();
 
-            // Delete download list file if exists
             File.Delete(Path.Combine(tempDirectory, "minecraft_download_list.txt"));
 
-            // Remove Java environment variable that might interfere
             Environment.SetEnvironmentVariable("_JAVA_OPTIONS", null);
 
-            // Generate launcher profiles
             GenerateProfileJson();
-
-            // Fetch versions asynchronously
             _ = FetchVersionsManifest();
 
             isInitializing = false;
@@ -114,9 +106,17 @@ namespace VortexNet
                 {
                     MessageBox.Show($"Error loading settings: {ex.Message}", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            } else
+            {
+                CultureInfo osCulture = CultureInfo.CurrentUICulture;
+                if (osCulture.Name == "ru-RU")
+                {
+                    settings.Language = "RU";
+                }
+                string json = JsonSerializer.Serialize(settings, serializerOptions);
+                File.WriteAllText(settingsPath, json);
             }
 
-            // Apply settings to variables
             downloadThreadsAmount = settings.DownloadThreads;
             asyncDownload = settings.AsyncDownload;
             playerName = settings.PlayerName;
@@ -129,7 +129,6 @@ namespace VortexNet
             keepLauncherOpenDefault = settings.KeepLauncherOpen;
             saveLaunchStringDefault = settings.SaveLaunchString;
 
-            // Update UI controls
             playerNameTextBox.Text = playerName;
             ramAmountTextBox.Text = ramAmount;
             downloadThreadsTextBox.Text = downloadThreadsAmount.ToString();
@@ -142,6 +141,14 @@ namespace VortexNet
             keepLauncherOpenCheckBox.IsChecked = keepLauncherOpenDefault;
             saveLaunchStringCheckBox.IsChecked = saveLaunchStringDefault;
             showAllVersionsCheckBox.IsChecked = settings.ShowAllVersions;
+
+            if (settings.Language == "RU")
+            {
+                SetLanguageRU();
+            } else
+            {
+                SetLanguageEN();
+            }
         }
 
         private void SaveSettings()
@@ -169,10 +176,9 @@ namespace VortexNet
                     settings.ChosenVersion = versionsComboBox.SelectedItem.ToString();
                 }
 
-                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                string json = JsonSerializer.Serialize(settings, serializerOptions);
                 File.WriteAllText(settingsPath, json);
 
-                // Update runtime variables
                 playerName = playerNameTextBox.Text;
                 ramAmount = ramAmountTextBox.Text;
                 downloadThreadsAmount = int.Parse(downloadThreadsTextBox.Text);
@@ -417,10 +423,8 @@ namespace VortexNet
             if (string.IsNullOrEmpty(versionToDownload) || versionToDownload == "Error")
                 return;
 
-            // Create version directory
             Utils.CreateDirectoryRecursive(Path.Combine("versions", versionToDownload));
 
-            // Get version JSON URL
             string jsonUrl = GetVersionManifestUrl(versionToDownload);
             if (string.IsNullOrEmpty(jsonUrl))
             {
@@ -429,10 +433,8 @@ namespace VortexNet
                 return;
             }
 
-            // Download version JSON
             string jsonPath = Path.Combine("versions", versionToDownload, $"{versionToDownload}.json");
             bool jsonDownloaded = await Utils.DownloadFileAsync(jsonUrl, jsonPath);
-
             if (!jsonDownloaded)
             {
                 MessageBox.Show("Failed to download version information.", "Download Error",
@@ -440,7 +442,6 @@ namespace VortexNet
                 return;
             }
 
-            // Prepare download list
             string downloadListPath = Path.Combine(tempDirectory, "minecraft_download_list.txt");
             File.Delete(downloadListPath);
 
@@ -538,7 +539,7 @@ namespace VortexNet
             FindInstalledVersions();
         }
 
-        private bool ParseLibrariesForDownload(string versionJson, string versionName, StreamWriter listFile)
+        private static bool ParseLibrariesForDownload(string versionJson, string versionName, StreamWriter listFile)
         {
             try
             {
@@ -885,10 +886,8 @@ namespace VortexNet
                 settings.ChosenVersion = selectedVersion;
                 SaveSettings();
 
-                // Launch Minecraft
                 LaunchMinecraft(selectedVersion);
 
-                // Optionally close launcher
                 if (!(keepLauncherOpenCheckBox.IsChecked ?? true))
                 {
                     Close();
@@ -1108,8 +1107,7 @@ namespace VortexNet
 
             // Get main class
             string clientMainClass = root.GetProperty("mainClass").GetString();
-
-            // Parse libraries from current version
+            
             librariesString += ParseLibrariesForLaunch(version, downloadMissingLibraries);
 
             // Check if client jar exists
@@ -1154,14 +1152,11 @@ namespace VortexNet
                 {
                     customArgs = customLaunchArguments;
                 }
-
-                // Use custom parameters if enabled
                 if (useCustomParamsCheckBox.IsChecked == true)
                 {
                     customArgs = launchArgsTextBox.Text;
                 }
 
-                // Generate UUID for offline mode
                 string uuid = Utils.GenerateOfflineUUID(playerName);
 
                 // Check if the arguments are in the new format 
@@ -1356,6 +1351,66 @@ namespace VortexNet
             return libsString;
         }
 
+        private void SetLanguageEN()
+        {
+            langChoiceEN.IsEnabled = false;
+            langChoiceRU.IsEnabled = true;
+            settings.Language = "EN";
+
+            labelPlayerName.Text = "Name:";
+            labelVersion.Text = "Version:";
+            labelJava.Text = "Java:";
+            labelRamAmount.Text = "RAM (MB):";
+            playButton.Content = "Play";
+
+            labelSettings.Text = "Settings";
+            labelDownloadThreads.Text = "Download Threads:";
+            asyncDownloadCheckBox.Content = "Multithreaded downloading";
+            keepLauncherOpenCheckBox.Content = "Keep launcher open";
+            downloadMissingLibsCheckBox.Content = "Download missing libraries on launch";
+            saveLaunchStringCheckBox.Content = "Save launch string to a file";
+            labelCustomJava.Text = "Custom Java path:";
+            useCustomJavaCheckBox.Content = "Use custom Java";
+            labelLaunchArguments.Text = "Launch Arguments:";
+            useCustomParamsCheckBox.Content = "Use custom launch arguments";
+
+            labelDownload.Text = "Download";
+            labelDownloadVersion.Text = "Version:";
+            showAllVersionsCheckBox.Content = "Show all versions";
+            redownloadAllFilesCheckBox.Content = "Redownload all files";
+            downloadVersionButton.Content = "Download";
+        }
+
+        private void SetLanguageRU()
+        {
+            langChoiceEN.IsEnabled = true;
+            langChoiceRU.IsEnabled = false;
+            settings.Language = "RU";
+
+            labelPlayerName.Text = "Ник:";
+            labelVersion.Text = "Версия:";
+            labelJava.Text = "Java:";
+            labelRamAmount.Text = "Память (МБ):";
+            playButton.Content = "Запуск";
+
+            labelSettings.Text = "Настройки";
+            labelDownloadThreads.Text = "Потоков загрузки:";
+            asyncDownloadCheckBox.Content = "Многопоточная загрузка";
+            keepLauncherOpenCheckBox.Content = "Не закрывать лаунчер";
+            downloadMissingLibsCheckBox.Content = "Скачивать недостающие библиотеки";
+            saveLaunchStringCheckBox.Content = "Сохранять строку запуска в файл";
+            labelCustomJava.Text = "Путь к Java:";
+            useCustomJavaCheckBox.Content = "Использовать свою Java";
+            labelLaunchArguments.Text = "Аргументы запуска:";
+            useCustomParamsCheckBox.Content = "Использовать свои аргументы запуска";
+
+            labelDownload.Text = "Загрузка";
+            labelDownloadVersion.Text = "Версия:";
+            showAllVersionsCheckBox.Content = "Показать все версии";
+            redownloadAllFilesCheckBox.Content = "Переустановить";
+            downloadVersionButton.Content = "Скачать";
+        }
+
         // WPF Event handlers
         private void PreviewTextInput_Number(object sender, TextCompositionEventArgs e)
         {
@@ -1459,6 +1514,18 @@ namespace VortexNet
 
         private void SaveLaunchStringCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
+            SaveSettings();
+        }
+
+        private void LanguageEN_Click(object sender, RoutedEventArgs e)
+        {
+            SetLanguageEN();
+            SaveSettings();
+        }
+
+        private void LanguageRU_Click(object sender, RoutedEventArgs e)
+        {
+            SetLanguageRU();
             SaveSettings();
         }
     }

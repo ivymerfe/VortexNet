@@ -57,7 +57,8 @@
                 <ColumnDefinition Width="220"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Text="Name:" Foreground="White" Margin="0,10,10,2" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="labelPlayerName" Text="Name:" Foreground="White"
+                       Margin="0,10,10,2" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBox x:Name="playerNameTextBox"
                      Width="190" Height="25" Text="Player" Margin="0,10,0,2"
                      Grid.Row="0" Grid.Column="1"
@@ -65,20 +66,23 @@
                      PreviewKeyDown="PreviewKeyDown_NoSpaces"
                      TextChanged="PlayerNameTextBox_TextChanged"/>
 
-            <TextBlock Text="RAM amount:" Foreground="White" Margin="0,10,10,2" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="labelVersion" Text="Version:" Foreground="White"
+                       Margin="0,10,10,2" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="versionsComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="1" Grid.Column="1" SelectionChanged="VersionsComboBox_SelectionChanged"/>
+
+            <TextBlock x:Name="labelJava" Text="Java:" Foreground="White"
+                       Margin="0,10,10,2" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="javaComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="2" Grid.Column="1" SelectionChanged="JavaComboBox_SelectionChanged"/>
+
+            <TextBlock x:Name="labelRamAmount" Text="RAM (MB):" Foreground="White" 
+                       Margin="0,10,10,2" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBox x:Name="ramAmountTextBox"
                      Width="190" Height="25" Text="2500" Margin="0,10,0,2"
-                     Grid.Row="1" Grid.Column="1"
+                     Grid.Row="3" Grid.Column="1"
                      PreviewTextInput="PreviewTextInput_Number"
                      PreviewKeyDown="PreviewKeyDown_NoSpaces"
                      TextChanged="RamAmountTextBox_TextChanged"/>
-
-            <TextBlock Text="Version:" Foreground="White" Margin="0,10,10,2" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-            <ComboBox x:Name="versionsComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="2" Grid.Column="1" SelectionChanged="VersionsComboBox_SelectionChanged"/>
-
-            <TextBlock Text="Java:" Foreground="White" Margin="0,10,10,2" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-            <ComboBox x:Name="javaComboBox" Width="190" Height="25" Margin="0,10,0,2" Grid.Row="3" Grid.Column="1" SelectionChanged="JavaComboBox_SelectionChanged"/>
-
+            
             <Button x:Name="playButton" Content="Play" Width="140" Height="40" Margin="0,20,0,0"
                     Foreground="White" BorderThickness="0"
                     Cursor="Hand" Grid.Row="4" Grid.Column="0" Click="PlayButton_Click">
@@ -114,9 +118,10 @@
         <!-- Settings Panel -->
         <Border Grid.Row="1" Margin="420,20,10,55">
             <StackPanel Margin="0,0,35,0">
-                <TextBlock Text="Settings" Foreground="White" FontWeight="Bold" FontSize="18"/>
+                <TextBlock x:Name="labelSettings" Text="Settings" Foreground="White" FontWeight="Bold" FontSize="18"/>
                 <DockPanel Margin="0,15,0,0">
-                    <TextBlock Text="Download Threads:" Foreground="White" Margin="0,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="labelDownloadThreads" Text="Download Threads:"
+                               Foreground="White" Margin="0,0,0,0" VerticalAlignment="Center"/>
                     <TextBox x:Name="downloadThreadsTextBox" Height="25" Margin="10,0,0,0"
                              VerticalAlignment="Center" HorizontalAlignment="Stretch" MinWidth="60" 
                              DockPanel.Dock="Right"
@@ -132,7 +137,7 @@
                 <CheckBox x:Name="downloadMissingLibsCheckBox" Content="Download missing libraries on launch" Foreground="White" Margin="0,15,0,0" Checked="DownloadMissingLibsCheckBox_CheckedChanged" Unchecked="DownloadMissingLibsCheckBox_CheckedChanged"/>
                 <CheckBox x:Name="saveLaunchStringCheckBox" Content="Save launch string to a file" Foreground="White" Margin="0,15,0,0" Checked="SaveLaunchStringCheckBox_CheckedChanged" Unchecked="SaveLaunchStringCheckBox_CheckedChanged"/>
                 
-                <TextBlock Text="Custom Java path:" Foreground="White" Margin="0,15,0,0"/>
+                <TextBlock x:Name="labelCustomJava" Text="Custom Java path:" Foreground="White" Margin="0,15,0,0"/>
                 <TextBox x:Name="javaPathTextBox"
                          MinWidth="60" Height="25" HorizontalAlignment="Stretch" Margin="0,10,0,0"
                          Text="C:\jre8\bin\javaw.exe"
@@ -140,7 +145,7 @@
                          IsEnabled="{Binding ElementName=useCustomJavaCheckBox, Path=IsChecked}"/>
                 <CheckBox x:Name="useCustomJavaCheckBox" Content="Use custom Java" Foreground="White" Margin="0,15,0,0" Checked="UseCustomJavaCheckBox_CheckedChanged" Unchecked="UseCustomJavaCheckBox_CheckedChanged"/>
                 
-                <TextBlock Text="Launch Arguments:" Foreground="White" Margin="0,15,0,0"/>
+                <TextBlock x:Name="labelLaunchArguments" Text="Launch Arguments:" Foreground="White" Margin="0,15,0,0"/>
                 <TextBox x:Name="launchArgsTextBox"
                          MinWidth="60" Height="25" HorizontalAlignment="Stretch" Margin="0,10,0,0"
                          TextChanged="LaunchArgsTextBox_TextChanged"
@@ -152,9 +157,9 @@
         <!-- Download Panel -->
         <Border Grid.Row="1" Grid.Column="0" Margin="20,260,420,24">
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Download" Foreground="White" FontWeight="Bold" FontSize="18" Margin="0,0,0,12"/>
+                <TextBlock x:Name="labelDownload" Text="Download" Foreground="White" FontWeight="Bold" FontSize="18" Margin="0,0,0,12"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Version:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock x:Name="labelDownloadVersion" Text="Version:" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <ComboBox x:Name="downloadVersionsComboBox" Width="190" Height="25" Margin="20,0,0,0">
                     </ComboBox>
                 </StackPanel>
@@ -202,5 +207,50 @@
                 </Grid>
             </StackPanel>
         </Border>
+
+        <!-- Language Switcher -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,30,20"
+               Grid.RowSpan="2">
+            <TextBlock x:Name="langChoiceEN" Margin="0,0,30,0" IsEnabled="False"
+                       Text="EN" Cursor="Hand" FontWeight="Bold" Opacity="0.7"
+                       MouseLeftButtonUp="LanguageEN_Click">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1.0" />
+                                <Setter Property="TextDecorations" Value="Underline" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="True">
+                                <Setter Property="Foreground" Value="#AAAAAA"></Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="White"></Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock x:Name="langChoiceRU"
+                       Text="RU" Cursor="Hand" FontWeight="Bold" Opacity="0.7"
+                       MouseLeftButtonUp="LanguageRU_Click">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1.0" />
+                                <Setter Property="TextDecorations" Value="Underline" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="True">
+                                <Setter Property="Foreground" Value="#AAAAAA"></Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="White"></Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </StackPanel>
     </Grid>
 </Window>
