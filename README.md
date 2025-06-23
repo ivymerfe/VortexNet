@@ -1,13 +1,14 @@
 ## Vortex Minecraft Launcher (WPF Edition)
 
+[![English](https://img.shields.io/badge/Language-English-blue)](README.md)
+[![Русский](https://img.shields.io/badge/Language-Русский-red)](README_RU.md)
+
 .NET port of [Vortex Minecraft launcher](https://github.com/Kron4ek/minecraft-vortex-launcher) by Kron4ek.
 
 Source code was translated by Claude 3.7. 
 I haven't tested it thoroughly, so there might be bugs!
 
-I just made a cool UI.
-
----
+It differs from the original by having an improved interface and lacking some features :).
 
 ## Features
 
@@ -22,19 +23,13 @@ I just made a cool UI.
 * Doesn't require Java to work
 * Can work fully offline
 
----
-
 ## Download
 
 Check the [**Releases**](https://github.com/ivymerfe/VortexNet/releases) page
 
----
-
 ## Screenshots
 
-![main window](images/1.png)
-
----
+![main window](images/main_en.png)
 
 ## License
 
