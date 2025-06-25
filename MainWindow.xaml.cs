@@ -997,8 +997,8 @@ namespace VortexNet
             if (!string.IsNullOrEmpty(inheritsFrom))
             {
                 string inheritsClientJar = inheritsFrom;
-
-                if (new FileInfo(clientJarFile).Length < 1 &&
+                bool noClientJar = !File.Exists(clientJarFile) || new FileInfo(clientJarFile).Length < 1;
+                if (noClientJar &&
                     File.Exists(Path.Combine("versions", inheritsClientJar, $"{inheritsClientJar}.jar")))
                 {
                     File.Copy(Path.Combine("versions", inheritsClientJar, $"{inheritsClientJar}.jar"),
@@ -1135,7 +1135,7 @@ namespace VortexNet
             // Get main class
             string clientMainClass = root.GetProperty("mainClass").GetString();
             
-            librariesString += ParseLibrariesForLaunch(version, downloadMissingLibraries);
+            librariesString += ParseLibrariesForLaunch(version, downloadMissingLibraries, librariesString);
 
             // Check if client jar exists
             if (File.Exists(clientJarFile))
