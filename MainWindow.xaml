@@ -5,7 +5,7 @@
         WindowStyle="None"
         Background="#1E1E1E"
         AllowsTransparency="True"
-        ResizeMode="NoResize"
+        ResizeMode="CanMinimize"
         WindowStartupLocation="Manual"
         FontSize="16">
 
