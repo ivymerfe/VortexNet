@@ -1,46 +1,46 @@
 ## Vortex Minecraft Launcher (WPF Edition)
 
 [![English](https://img.shields.io/badge/Language-English-blue)](README.md)
-[![Русский](https://img.shields.io/badge/Language-Русский-red)](README_RU.md)
+[![Р СѓСЃСЃРєРёР№](https://img.shields.io/badge/Language-Р СѓСЃСЃРєРёР№-red)](README_RU.md)
 
-.NET порт [Vortex Minecraft launcher](https://github.com/Kron4ek/minecraft-vortex-launcher) от Kron4ek.
+.NET РїРѕСЂС‚ [Vortex Minecraft launcher](https://github.com/Kron4ek/minecraft-vortex-launcher) РѕС‚ Kron4ek.
 
-Исходный код был переведен с помощью Claude 3.7.
-Могут быть ошибки, пишите о них в Issues
+РСЃС…РѕРґРЅС‹Р№ РєРѕРґ Р±С‹Р» РїРµСЂРµРІРµРґРµРЅ СЃ РїРѕРјРѕС‰СЊСЋ Claude 3.7.
+РњРѕРіСѓС‚ Р±С‹С‚СЊ РѕС€РёР±РєРё, РїРёС€РёС‚Рµ Рѕ РЅРёС… РІ Issues
 
-Отличается от оригинала улучшенным интерфейсом и отсутствием некоторых функций :).
+РћС‚Р»РёС‡Р°РµС‚СЃСЏ РѕС‚ РѕСЂРёРіРёРЅР°Р»Р° СѓР»СѓС‡С€РµРЅРЅС‹Рј РёРЅС‚РµСЂС„РµР№СЃРѕРј Рё РѕС‚СЃСѓС‚СЃС‚РІРёРµРј РЅРµРєРѕС‚РѕСЂС‹С… С„СѓРЅРєС†РёР№ :).
 
-## Особенности
+## РћСЃРѕР±РµРЅРЅРѕСЃС‚Рё
 
-* Легкий и быстрый
-* Открытый исходный код
-* ~~Кросс-платформенный~~ Только для Windows
-* Поддерживает все версии Minecraft
-* ~~Поддерживает Forge и другие API~~
-* Загружает все версии Minecraft
-* ~~Загружает отсутствующие библиотеки~~
-* Не требует учетной записи Minecraft
-* Не требует Java для работы
-* Может работать офлайн
+* Р›РµРіРєРёР№ Рё Р±С‹СЃС‚СЂС‹Р№
+* РћС‚РєСЂС‹С‚С‹Р№ РёСЃС…РѕРґРЅС‹Р№ РєРѕРґ
+* ~~РљСЂРѕСЃСЃ-РїР»Р°С‚С„РѕСЂРјРµРЅРЅС‹Р№~~ РўРѕР»СЊРєРѕ РґР»СЏ Windows
+* РџРѕРґРґРµСЂР¶РёРІР°РµС‚ РІСЃРµ РІРµСЂСЃРёРё Minecraft
+* ~~РџРѕРґРґРµСЂР¶РёРІР°РµС‚ Forge Рё РґСЂСѓРіРёРµ API~~
+* Р—Р°РіСЂСѓР¶Р°РµС‚ РІСЃРµ РІРµСЂСЃРёРё Minecraft
+* ~~Р—Р°РіСЂСѓР¶Р°РµС‚ РѕС‚СЃСѓС‚СЃС‚РІСѓСЋС‰РёРµ Р±РёР±Р»РёРѕС‚РµРєРё~~
+* РќРµ С‚СЂРµР±СѓРµС‚ СѓС‡РµС‚РЅРѕР№ Р·Р°РїРёСЃРё Minecraft
+* РќРµ С‚СЂРµР±СѓРµС‚ Java РґР»СЏ СЂР°Р±РѕС‚С‹
+* РњРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РѕС„Р»Р°Р№РЅ
 
-## Скачать
+## РЎРєР°С‡Р°С‚СЊ
 
-Смотрите страницу [**Releases**](https://github.com/ivymerfe/VortexNet/releases)
+РЎРјРѕС‚СЂРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ [**Releases**](https://github.com/ivymerfe/VortexNet/releases)
 
-Для работы требуется .NET 8.0!
+Р”Р»СЏ СЂР°Р±РѕС‚С‹ С‚СЂРµР±СѓРµС‚СЃСЏ .NET 8.0!
 
 https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 
-Установщики x64 / x86:
+РЈСЃС‚Р°РЅРѕРІС‰РёРєРё x64 / x86:
 
 https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x64-installer
 
 https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x86-installer
 
-## Скриншоты
+## РЎРєСЂРёРЅС€РѕС‚С‹
 
-![главное окно](images/main_ru.png)
+![РіР»Р°РІРЅРѕРµ РѕРєРЅРѕ](images/main_ru.png)
 
-## Лицензия
+## Р›РёС†РµРЅР·РёСЏ
 
 [GPLv3](https://github.com/Kron4ek/minecraft-vortex-launcher/blob/master/LICENSE.txt)
