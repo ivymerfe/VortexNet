@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -41,14 +42,64 @@ namespace VortexNet
         private string settingsPath;
         private JsonSerializerOptions serializerOptions = new JsonSerializerOptions { WriteIndented = true };
 
-        public MainWindow()
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GetCursorPos(out POINT lpPoint);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
         {
-            InitializeComponent();
-            settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vortex_settings.json");
-            InitializeLauncher();
+            public int X;
+            public int Y;
         }
 
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        public MainWindow()
+        {
+            // Warmup
+            Task.Run(() => JsonSerializer.Deserialize<LauncherSettings>("{}"));
+
+            InitializeComponent();
+
+            Point playButtonPos = new(20 + 70, 228 + 20);
+
+            if (GetCursorPos(out POINT cursor))
+            {
+                Left = Math.Max(0, cursor.X - playButtonPos.X);
+                Top = Math.Max(0, cursor.Y - playButtonPos.Y);
+            } else
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
+            settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vortex_settings.json");
+            workingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            tempDirectory = Path.GetTempPath();
+            programFilesDirs.Add(Environment.GetEnvironmentVariable("PROGRAMFILES") + "\\");
+            programFilesDirs.Add(Environment.GetEnvironmentVariable("ProgramFiles(x86)") + "\\");
+            javaDirs.Add("Java");
+            javaDirs.Add("Eclipse Adoptium");
+
+            Directory.SetCurrentDirectory(workingDirectory);
+            LoadSettings();
+            
+            this.Loaded += (s,e) => {
+                Task.Run(FetchVersionsManifest);
+
+                Dispatcher.BeginInvoke(() =>
+                {
+                    File.Delete(Path.Combine(tempDirectory, "minecraft_download_list.txt"));
+                    Environment.SetEnvironmentVariable("_JAVA_OPTIONS", null);
+
+                    FindInstalledVersions();
+                    FindJava();
+                    GenerateProfileJson();
+
+                    isInitializing = false;
+                });
+            };
+        }
+
+        private void Title_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             DragMove();
         }
@@ -63,32 +114,10 @@ namespace VortexNet
             WindowState = WindowState.Minimized;
         }
 
-        private void InitializeLauncher()
+        private void WriteSettingsJson()
         {
-            workingDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            tempDirectory = Path.GetTempPath();
-
-            programFilesDirs.Add(Environment.GetEnvironmentVariable("PROGRAMFILES") + "\\");
-            programFilesDirs.Add(Environment.GetEnvironmentVariable("ProgramFiles(x86)") + "\\");
-
-            javaDirs.Add("Java");
-            javaDirs.Add("Eclipse Adoptium");
-
-            Directory.SetCurrentDirectory(workingDirectory);
-
-            LoadSettings();
-
-            FindInstalledVersions();
-            FindJava();
-
-            File.Delete(Path.Combine(tempDirectory, "minecraft_download_list.txt"));
-
-            Environment.SetEnvironmentVariable("_JAVA_OPTIONS", null);
-
-            GenerateProfileJson();
-            _ = FetchVersionsManifest();
-
-            isInitializing = false;
+            string json = JsonSerializer.Serialize(settings, serializerOptions);
+            File.WriteAllText(settingsPath, json);
         }
 
         private void LoadSettings()
@@ -113,8 +142,7 @@ namespace VortexNet
                 {
                     settings.Language = "RU";
                 }
-                string json = JsonSerializer.Serialize(settings, serializerOptions);
-                File.WriteAllText(settingsPath, json);
+                WriteSettingsJson();
             }
 
             downloadThreadsAmount = settings.DownloadThreads;
@@ -317,10 +345,9 @@ namespace VortexNet
             if (fileSize != settings.LastProfilesJsonSize)
             {
                 forceDownloadMissingLibraries = true;
+                settings.LastProfilesJsonSize = fileSize;
+                WriteSettingsJson();
             }
-
-            settings.LastProfilesJsonSize = fileSize;
-            SaveSettings();
         }
 
         private async Task FetchVersionsManifest()
@@ -1521,12 +1548,14 @@ namespace VortexNet
         {
             SetLanguageEN();
             SaveSettings();
+            e.Handled = true;
         }
 
         private void LanguageRU_Click(object sender, RoutedEventArgs e)
         {
             SetLanguageRU();
             SaveSettings();
+            e.Handled = true;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace VortexNet
         public string CustomJavaPath { get; set; } = @"C:\jre8\bin\javaw.exe";
         public int DownloadThreads { get; set; } = 20;
         public bool AsyncDownload { get; set; } = true;
-        public bool KeepLauncherOpen { get; set; } = true;
+        public bool KeepLauncherOpen { get; set; } = false;
         public bool DownloadMissingLibs { get; set; } = true;
         public bool SaveLaunchString { get; set; } = false;
         public bool UseCustomParameters { get; set; } = false;
