@@ -1,4 +1,4 @@
-## Vortex Minecraft Launcher (WPF Edition)
+﻿## Vortex Minecraft Launcher (WPF Edition)
 
 [![English](https://img.shields.io/badge/Language-English-blue)](README.md)
 [![Русский](https://img.shields.io/badge/Language-Русский-red)](README_RU.md)
@@ -16,7 +16,7 @@
 * Открытый исходный код
 * ~~Кросс-платформенный~~ Только для Windows
 * Поддерживает все версии Minecraft
-* ~~Поддерживает Forge и другие API~~
+* Поддерживает Fabric и Forge (но их нужно установить самому)
 * Загружает все версии Minecraft
 * ~~Загружает отсутствующие библиотеки~~
 * Не требует учетной записи Minecraft

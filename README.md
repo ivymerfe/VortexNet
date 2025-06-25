@@ -16,7 +16,7 @@ It differs from the original by having an improved interface and lacking some fe
 * Open-Source
 * ~~Cross-Platform~~ Windows only
 * Supports all Minecraft versions
-* ~~Supports Forge and other APIs~~
+* Supports Fabric and Forge (but you have to install them yourself)
 * Downloads all Minecraft versions
 * ~~Downloads missing libraries~~
 * Doesn't require Minecraft account
