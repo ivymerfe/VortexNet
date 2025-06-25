@@ -27,6 +27,16 @@ It differs from the original by having an improved interface and lacking some fe
 
 Check the [**Releases**](https://github.com/ivymerfe/VortexNet/releases) page
 
+.Net 8.0 is required!
+
+https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+
+x64 / x86 installers:
+
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x64-installer
+
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x86-installer
+
 ## Screenshots
 
 ![main window](images/main_en.png)

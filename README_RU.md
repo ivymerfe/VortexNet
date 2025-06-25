@@ -27,6 +27,16 @@
 
 Смотрите страницу [**Releases**](https://github.com/ivymerfe/VortexNet/releases)
 
+Для работы требуется .NET 8.0!
+
+https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+
+Установщики x64 / x86:
+
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x64-installer
+
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.17-windows-x86-installer
+
 ## Скриншоты
 
 ![главное окно](images/main_ru.png)
