@@ -12,13 +12,16 @@
   <ItemGroup>
     <None Remove="appicon.ico" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <Content Include="appicon.ico" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <Resource Include="appicon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+  </ItemGroup>
 </Project>

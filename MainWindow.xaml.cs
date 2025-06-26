@@ -3,11 +3,14 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 
 namespace VortexNet
 {
@@ -837,6 +840,16 @@ namespace VortexNet
 
         private void PlayButton_Click(object sender, RoutedEventArgs e)
         {
+            LaunchChecked(false);
+        }
+
+        private void ShortcutButton_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchChecked(true);
+        }
+
+        private void LaunchChecked(bool createShortcut)
+        {
             try
             {
                 string selectedVersion = versionsComboBox.SelectedItem?.ToString();
@@ -913,9 +926,9 @@ namespace VortexNet
                 settings.ChosenVersion = selectedVersion;
                 SaveSettings();
 
-                LaunchMinecraft(selectedVersion);
+                LaunchMinecraft(selectedVersion, createShortcut);
 
-                if (!(keepLauncherOpenCheckBox.IsChecked ?? true))
+                if (!(keepLauncherOpenCheckBox.IsChecked ?? true) && !createShortcut)
                 {
                     Close();
                 }
@@ -957,7 +970,7 @@ namespace VortexNet
             return javaBinaryPathDefault;
         }
 
-        private void LaunchMinecraft(string version)
+        private void LaunchMinecraft(string version, bool createShortcut = false)
         {
             string clientJarFile = Path.Combine("versions", version, $"{version}.jar");
             string nativesPath = Path.Combine("versions", version, "natives");
@@ -1239,22 +1252,39 @@ namespace VortexNet
                     File.WriteAllText("launch_string.txt", $"\"{javaBinaryPath}\" {fullLaunchString}");
                 }
 
-                ProcessStartInfo startInfo = new()
+                if (createShortcut)
                 {
-                    FileName = javaBinaryPath,
-                    Arguments = fullLaunchString,
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = true,
-                    CreateNoWindow = true
-                };
-                try
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                    string shortcutPath = Path.Combine(desktopPath, $"{version}.lnk");
+                    string? currentApp = System.Environment.ProcessPath;
+
+                    IShellLink link = (IShellLink)new ShellLink();
+                    link.SetPath(javaBinaryPath);
+                    link.SetArguments(fullLaunchString);
+                    link.SetWorkingDirectory(workingDirectory);
+                    link.SetIconLocation(currentApp, 0);
+                    link.SetShowCmd(1);
+                    IPersistFile file = (IPersistFile)link;
+                    file.Save(shortcutPath, false);
+                } else
                 {
-                    Process minecraftProcess = Process.Start(startInfo);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error launching Minecraft: {ex.Message}\n\nDetails: {ex.ToString()}",
-                        "Launch Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = javaBinaryPath,
+                        Arguments = fullLaunchString,
+                        WorkingDirectory = workingDirectory,
+                        UseShellExecute = true,
+                        CreateNoWindow = true
+                    };
+                    try
+                    {
+                        Process minecraftProcess = Process.Start(startInfo);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error launching Minecraft: {ex.Message}\n\nDetails: {ex.ToString()}",
+                            "Launch Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
             else
@@ -1389,6 +1419,7 @@ namespace VortexNet
             labelJava.Text = "Java:";
             labelRamAmount.Text = "RAM (MB):";
             playButton.Content = "Play";
+            shortcutButton.Content = "Shortcut";
 
             labelSettings.Text = "Settings";
             labelDownloadThreads.Text = "Download Threads:";
@@ -1419,6 +1450,7 @@ namespace VortexNet
             labelJava.Text = "Java:";
             labelRamAmount.Text = "Память (МБ):";
             playButton.Content = "Запуск";
+            shortcutButton.Content = "Ярлык";
 
             labelSettings.Text = "Настройки";
             labelDownloadThreads.Text = "Потоков загрузки:";

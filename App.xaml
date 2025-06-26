@@ -168,6 +168,19 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Shortcut button -->
+        <Style x:Key="ShortcutButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonBaseStyle}">
+            <Setter Property="Background" Value="#DD6D00"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#CC5C00"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#BB4B00"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- CheckBox -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="White"/>

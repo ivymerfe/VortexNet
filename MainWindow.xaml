@@ -79,6 +79,14 @@
                     IsEnabled="False"
                     Click="PlayButton_Click"
                     Style="{StaticResource PlayButtonStyle}"/>
+
+            <Button x:Name="shortcutButton" Content="Shortcut"
+                    Width="100" Height="40" Margin="20,20,0,0"
+                    Grid.Row="4" Grid.Column="1"
+                    HorizontalAlignment="Left"
+                    IsEnabled="{Binding IsEnabled, ElementName=playButton}"
+                    Click="ShortcutButton_Click"
+                    Style="{StaticResource ShortcutButtonStyle}"/>
         </Grid>
 
         <!-- Settings Panel -->
