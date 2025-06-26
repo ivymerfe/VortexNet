@@ -1,4 +1,4 @@
-## Vortex Minecraft Launcher (WPF Edition)
+﻿## Vortex Minecraft Launcher (WPF Edition)
 
 [![English](https://img.shields.io/badge/Language-English-blue)](README.md)
 [![Русский](https://img.shields.io/badge/Language-Русский-red)](README_RU.md)
@@ -18,6 +18,7 @@ It differs from the original by having an improved interface and lacking some fe
 * Supports all Minecraft versions
 * Supports Fabric and Forge (but you have to install them yourself)
 * Downloads all Minecraft versions
+* Can create shortcuts for direct launch (javaw + arguments)
 * ~~Downloads missing libraries~~
 * Doesn't require Minecraft account
 * Doesn't require Java to work
